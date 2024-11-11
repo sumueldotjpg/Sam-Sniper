@@ -10,6 +10,8 @@ auctionism = defaultdict(lambda: {"lowest_price": float('inf'), "enchantments": 
 api = '1c19e635-6e0e-46f7-aedb-5c95d3a9dbc5'
 API_URL = "https://api.hypixel.net/skyblock/auctions"
 
+
+
 def get_auction_data():
     """Fetch auction data from the Hypixel API."""
     params = {'key': api}
@@ -39,8 +41,8 @@ seen_auctions = []
 for a in filter_bin_auctions(get_auction_data()):
     seen_auctions.append(a['uuid'])
 
-def monitor_auctions():
-    """Monitor auctions and print new BIN auctions to the terminal."""
+def monitor_auctions(profit_margin_threshold=10):
+    """Monitor auctions and print new BIN auctions to the terminal with a profit margin threshold."""
     while True:
         auction_data = get_auction_data()
         
@@ -50,6 +52,8 @@ def monitor_auctions():
             
             if bin_auctions:
                 new_auctions = []
+                blocked_count = 0  # Counter for auctions blocked by the filter
+
                 for auction in bin_auctions:
                     auction_id = auction['uuid']
                     starting_bid = auction.get('starting_bid', 0)
@@ -78,31 +82,33 @@ def monitor_auctions():
                         else:
                             # Item exists in auctionism, check if this price is lower
                             current_lowest_price = auctionism[item_key]["lowest_price"]
-                            if current_lowest_price == None:
+                            if current_lowest_price is None:
                                 current_lowest_price = 0
                             if starting_bid < current_lowest_price:
-                                # Update auctionism with the new lowest price for this item
-                                auctionism[item_key]["lowest_price"] = starting_bid
-                                auctionism[item_key]["item_name"] = item_name
-                                auctionism[item_key]["reforge"] = reforge
+                                # Calculate the profit margin
+                                profit_margin = ((current_lowest_price / starting_bid) * 100) - 100
                                 
-                                # Add to new_auctions list to print details
-                                new_auctions.append(auction)
-
-                                # Print new lowest auction
-                                print(f'cheap item alert {item_name} going for {starting_bid} -> {current_lowest_price}')
+                                # Only update and display if profit margin is above threshold
+                                if profit_margin > profit_margin_threshold:
+                                    # Update auctionism with the new lowest price for this item
+                                    auctionism[item_key]["lowest_price"] = starting_bid
+                                    auctionism[item_key]["item_name"] = item_name
+                                    auctionism[item_key]["reforge"] = reforge
+                                    
+                                    # Add to new_auctions list to print details
+                                    new_auctions.append(auction)
+                                    print(f'Snipe: {item_name} going for {starting_bid} -> {current_lowest_price} with profit margin {profit_margin:.2f}%')
+                                else:
+                                    # Increment the counter if the auction was blocked by the filter
+                                    blocked_count += 1
                 
-                # Print the details of the new lowest BIN auctions
-                if new_auctions:
-                    continue
-#                    for auction in new_auctions:
-#                        print("New lowest BIN auction found!")
-#                        print(f"Item: {auction['item_name']}")
-#                        print(f"Price: {auction['starting_bid']}")
-#                        print(f"UUID: {auction['uuid']}")
-#                        print("-" * 40)
-                else:
+                # Print the details of the new lowest BIN auctions if any were found
+                if not new_auctions:
                     print("No new lowest BIN auctions.")
+                
+                # Print the count of auctions blocked by the filter, if any
+                if blocked_count > 0:
+                    print(f"{blocked_count} auctions have been blocked by your filter.")
             else:
                 print("No BIN auctions received in the latest data.")
         else:
@@ -110,6 +116,9 @@ def monitor_auctions():
         
         # Sleep for a specified interval (e.g., 30 seconds)
         time.sleep(5)
+
+
+
 
 # Define the set of blacksmith reforges
 blacksmith_reforges = {
