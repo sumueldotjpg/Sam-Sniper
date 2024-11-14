@@ -86,7 +86,7 @@ async def monitor_auctions(profit_margin_threshold=10):
                     base_item_name = remove_reforge(item_name)
                     item_key = (base_item_name, rarity)
                     
-                    # Check if the auction is new
+                    # Update the part where new auctions are added to the list
                     if auction_id not in seen_auctions:
                         seen_auctions.append(auction_id)
                         
@@ -97,6 +97,7 @@ async def monitor_auctions(profit_margin_threshold=10):
                                 "lowest_price": starting_bid,
                                 "item_name": item_name,
                                 "reforge": reforge,
+                                "uuid": auction_id  # Add the uuid to auctionism
                             }
                             # This is a new lowest BIN auction because it’s newly added
                             new_auctions.append(auction)
@@ -115,11 +116,12 @@ async def monitor_auctions(profit_margin_threshold=10):
                                     auctionism[item_key]["lowest_price"] = starting_bid
                                     auctionism[item_key]["item_name"] = item_name
                                     auctionism[item_key]["reforge"] = reforge
+                                    auctionism[item_key]["uuid"] = auction_id  # Add the uuid to auctionism
                                     
                                     # Add to new_auctions list to print details
                                     new_auctions.append(auction)
                                     print(f'Snipe: {item_name} going for {starting_bid} -> {current_lowest_price} with profit margin {profit_margin:.2f}%')
-                                    await send_message(f'Snipe: {item_name} going for {starting_bid} -> {current_lowest_price} with profit margin {profit_margin:.2f}%')
+                                    await send_message(f'/viewauction {auction_id}')
                                 else:
                                     # Increment the counter if the auction was blocked by the filter
                                     blocked_count += 1
@@ -219,22 +221,6 @@ def process_auctions_and_update_prices(auctions):
 
 
     auctionism = item_data
-    # Write the results to a text file
-    write_lowest_prices_to_file(item_data)
-
-def write_lowest_prices_to_file(item_data, filename="lowest_prices.txt"):
-    # Open the file with utf-8 encoding to handle all Unicode characters
-    with open(filename, 'w', encoding='utf-8') as file:
-        for item_key, data in item_data.items():
-            # Unpack item properties
-            item_name = data["item_name"]
-            lowest_price = data["lowest_price"]
-            item_rarity = data["item_name"].split()[0]  # Assuming rarity is the first part of the name
-            reforge = data["reforge"]
-
-            # Write to the file in the specified format
-            file.write(f"{item_name} Price:{lowest_price:.2f}, Rarity:{item_rarity}, Reforge:{reforge}\n")
-
 
 # Usage: Assuming `all_auctions` is the list of auction data
 process_auctions_and_update_prices(all_auctions)
