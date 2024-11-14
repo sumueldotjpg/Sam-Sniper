@@ -6,12 +6,15 @@ import concurrent.futures
 from collections import defaultdict
 import asyncio
 import websockets
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
+
 
 seen_auctions = []
 auctionism = defaultdict(lambda: {"lowest_price": float('inf'), "enchantments": None, "item_name": None, "reforge": None})
 api = '1c19e635-6e0e-46f7-aedb-5c95d3a9dbc5'
 API_URL = "https://api.hypixel.net/skyblock/auctions"
-
 
 
 def get_auction_data():
@@ -62,7 +65,8 @@ async def send_message(command):
         await websocket.send(command)  # Send the message asynchronously
         print(f"Sent: {command}")    
 
-async def monitor_auctions(profit_margin_threshold=10):
+
+async def monitor_auctions(profit_margin_threshold=10, profit_minimum=1000000):
     """Monitor auctions and print new BIN auctions to the terminal with a profit margin threshold."""
     while True:
         auction_data = get_auction_data()
@@ -109,9 +113,10 @@ async def monitor_auctions(profit_margin_threshold=10):
                             if starting_bid < current_lowest_price:
                                 # Calculate the profit margin
                                 profit_margin = ((current_lowest_price / starting_bid) * 100) - 100
+                                profit_min = current_lowest_price - starting_bid
                                 
                                 # Only update and display if profit margin is above threshold
-                                if profit_margin > profit_margin_threshold:
+                                if profit_margin > profit_margin_threshold and profit_min > profit_minimum:
                                     # Update auctionism with the new lowest price for this item
                                     auctionism[item_key]["lowest_price"] = starting_bid
                                     auctionism[item_key]["item_name"] = item_name
@@ -120,8 +125,8 @@ async def monitor_auctions(profit_margin_threshold=10):
                                     
                                     # Add to new_auctions list to print details
                                     new_auctions.append(auction)
-                                    print(f'Snipe: {item_name} going for {starting_bid} -> {current_lowest_price} with profit margin {profit_margin:.2f}%')
-                                    await send_message(f'/viewauction {auction_id}')
+                                    print("Snipe: {} going for {} -> {} with profit margin {:.2f}%".format(repr(item_name), starting_bid, current_lowest_price, profit_margin))
+                                    
                                 else:
                                     # Increment the counter if the auction was blocked by the filter
                                     blocked_count += 1
@@ -133,13 +138,21 @@ async def monitor_auctions(profit_margin_threshold=10):
                 # Print the count of auctions blocked by the filter, if any
                 if blocked_count > 0:
                     print(f"{blocked_count} auctions have been blocked by your filter.")
+                
             else:
                 print("No BIN auctions received in the latest data.")
+            
         else:
             print("No auction data available or failed to retrieve auctions.")
+
+
+        
         
         # Sleep for a specified interval (e.g., 5 seconds)
-        await asyncio.sleep(5)
+        if new_auctions:
+            await asyncio.sleep(55)
+        else:
+            await asyncio.sleep(0.05)
 
 # Usage: Running the monitor function within an event loop
 if __name__ == "__main__":
