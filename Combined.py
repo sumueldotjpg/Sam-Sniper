@@ -6,6 +6,9 @@ import concurrent.futures
 from collections import defaultdict
 import asyncio
 import websockets
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
 
 
 seen_auctions = []
@@ -122,7 +125,7 @@ async def monitor_auctions(profit_margin_threshold=10, profit_minimum=1000000):
                                     
                                     # Add to new_auctions list to print details
                                     new_auctions.append(auction)
-                                    print("Snipe: {} going for {} -> {} with profit margin {:.2f}%".format(item_name, starting_bid, current_lowest_price, profit_margin))
+                                    print("Snipe: {} going for {} -> {} with profit margin {:.2f}%".format(repr(item_name), starting_bid, current_lowest_price, profit_margin))
                                     
                                 else:
                                     # Increment the counter if the auction was blocked by the filter
