@@ -4,6 +4,8 @@ import logging
 import requests
 import concurrent.futures
 from collections import defaultdict
+import asyncio
+import websockets
 
 seen_auctions = []
 auctionism = defaultdict(lambda: {"lowest_price": float('inf'), "enchantments": None, "item_name": None, "reforge": None})
@@ -36,12 +38,31 @@ def filter_bin_auctions(auction_data):
     """Filter out BIN auctions."""
     return [auction for auction in auction_data['auctions'] if auction.get('bin', False)]
 
+# Define the set of blacksmith reforges
+blacksmith_reforges = {
+    'Epic','Fair','Fast','Gentle','Heroic','Legendary','Odd','Sharp','Spicy','Awkward','Deadly','Fine','Grand','Hasty','Neat','Rapid','Rich','Unreal','Clean','Fierce','Heavy','Light','Mythic','Pure','Titanic','Smart','Wise','Stained','Menacing','Hefty','Soft','Honored','Blended','Astute','Colossal','Brilliant','Epic','Fair','Fast','Gentle','Heroic','Legendary','Odd','Sharp','Spicy','Unyielding','Prospector\'s','Excellent','Sturdy','Fortunate','Great','Rugged','Lush','Lumberjack\'s','Double-Bit','Robust','Zooming','Peasant\'s','Green Thumb'
+}
+
+def remove_reforge(item_name):
+    """Remove reforge from the item name."""
+    for reforge in blacksmith_reforges:
+        if reforge in item_name:
+            # If reforge is found, remove it from the name
+            return item_name.replace(reforge, '').strip()
+    return item_name  # Return the original name if no reforge is found
+
 seen_auctions = []
 
 for a in filter_bin_auctions(get_auction_data()):
     seen_auctions.append(a['uuid'])
 
-def monitor_auctions(profit_margin_threshold=10):
+async def send_message(command):
+    uri = "ws://localhost:8080"  # Server address
+    async with websockets.connect(uri) as websocket:
+        await websocket.send(command)  # Send the message asynchronously
+        print(f"Sent: {command}")    
+
+async def monitor_auctions(profit_margin_threshold=10):
     """Monitor auctions and print new BIN auctions to the terminal with a profit margin threshold."""
     while True:
         auction_data = get_auction_data()
@@ -98,6 +119,7 @@ def monitor_auctions(profit_margin_threshold=10):
                                     # Add to new_auctions list to print details
                                     new_auctions.append(auction)
                                     print(f'Snipe: {item_name} going for {starting_bid} -> {current_lowest_price} with profit margin {profit_margin:.2f}%')
+                                    await send_message(f'Snipe: {item_name} going for {starting_bid} -> {current_lowest_price} with profit margin {profit_margin:.2f}%')
                                 else:
                                     # Increment the counter if the auction was blocked by the filter
                                     blocked_count += 1
@@ -114,16 +136,14 @@ def monitor_auctions(profit_margin_threshold=10):
         else:
             print("No auction data available or failed to retrieve auctions.")
         
-        # Sleep for a specified interval (e.g., 30 seconds)
-        time.sleep(5)
+        # Sleep for a specified interval (e.g., 5 seconds)
+        await asyncio.sleep(5)
+
+# Usage: Running the monitor function within an event loop
+if __name__ == "__main__":
+    asyncio.run(monitor_auctions())
 
 
-
-
-# Define the set of blacksmith reforges
-blacksmith_reforges = {
-    'Epic','Fair','Fast','Gentle','Heroic','Legendary','Odd','Sharp','Spicy','Awkward','Deadly','Fine','Grand','Hasty','Neat','Rapid','Rich','Unreal','Clean','Fierce','Heavy','Light','Mythic','Pure','Titanic','Smart','Wise','Stained','Menacing','Hefty','Soft','Honored','Blended','Astute','Colossal','Brilliant','Epic','Fair','Fast','Gentle','Heroic','Legendary','Odd','Sharp','Spicy','Unyielding','Prospector\'s','Excellent','Sturdy','Fortunate','Great','Rugged','Lush','Lumberjack\'s','Double-Bit','Robust','Zooming','Peasant\'s','Green Thumb'
-}
 
 def fetch_page(api, page):
     """Fetch a specific page of auctions from the Hypixel API."""
@@ -157,13 +177,7 @@ def fetch_all_auctions(api):
 
 all_auctions = fetch_all_auctions(api)
 
-def remove_reforge(item_name):
-    """Remove reforge from the item name."""
-    for reforge in blacksmith_reforges:
-        if reforge in item_name:
-            # If reforge is found, remove it from the name
-            return item_name.replace(reforge, '').strip()
-    return item_name  # Return the original name if no reforge is found
+
 
 def process_auctions_and_update_prices(auctions):
     # Dictionary to hold the lowest price for each unique item
