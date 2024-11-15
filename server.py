@@ -10,6 +10,7 @@ import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 
+Crimson_Items = ["Crimson Helmet", "Crimson Chestplate", "Crimson Leggings", "Crimson Boots", "Aurora Helmet", "Aurora Chestplate", "Aurora Leggings", "Aurora Boots", "Hollow Helmet", "Hollow Chestplate", "Hollow Leggings", "Hollow Boots", "Fervor Helmet", "Fervor Chestplate", "Fervor Leggings", "Fervor Boots", "Terror Helmet", "Terror Chestplate", "Terror Leggings", "Terror Boots"]
 
 seen_auctions = []
 auctionism = defaultdict(lambda: {"lowest_price": float('inf'), "enchantments": None, "item_name": None, "reforge": None})
@@ -208,7 +209,7 @@ async def handle_client(websocket, path):
                                             profit_min = current_lowest_price - starting_bid
                                             
                                             # Only update and display if profit margin is above threshold
-                                            if profit_margin > 10 and profit_min > 1000000:
+                                            if profit_margin > 10 and profit_min > 1000000 and item_name not in Crimson_Items:
                                                 # Update auctionism with the new lowest price for this item
                                                 auctionism[item_key]["lowest_price"] = starting_bid
                                                 auctionism[item_key]["item_name"] = item_name
