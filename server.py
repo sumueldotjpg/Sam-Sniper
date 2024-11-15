@@ -251,9 +251,9 @@ async def handle_client(websocket, path):
                     
                     # Sleep for a specified interval (e.g., 5 seconds)
                     if new_auctions:
-                        await asyncio.sleep(55)
+                        await asyncio.sleep(58)
                     else:
-                        await asyncio.sleep(0.05)
+                        await asyncio.sleep(0.01)
             elif message == {"message":"STOP"}:
                 onifications = False
             # Process the message or send a response
