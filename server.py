@@ -47,12 +47,19 @@ blacksmith_reforges = {
     'Epic','Fair','Fast','Gentle','Heroic','Legendary','Odd','Sharp','Spicy','Awkward','Deadly','Fine','Grand','Hasty','Neat','Rapid','Rich','Unreal','Clean','Fierce','Heavy','Light','Mythic','Pure','Titanic','Smart','Wise','Stained','Menacing','Hefty','Soft','Honored','Blended','Astute','Colossal','Brilliant','Epic','Fair','Fast','Gentle','Heroic','Legendary','Odd','Sharp','Spicy','Unyielding','Prospector\'s','Excellent','Sturdy','Fortunate','Great','Rugged','Lush','Lumberjack\'s','Double-Bit','Robust','Zooming','Peasant\'s','Green Thumb'
 }
 
-def remove_reforge(item_name):
+def Format_name(item_name):
+    pet_level = []
+    for x in range (99):
+        pet_level.append(f'lvl {x+1}')
+
     """Remove reforge from the item name."""
     for reforge in blacksmith_reforges:
         if reforge in item_name:
             # If reforge is found, remove it from the name
-            return item_name.replace(reforge, '').strip()
+            item_name = item_name.replace(reforge, '').strip()
+    for plevel in pet_level:
+        if plevel in item_name:
+            item_name = item_name.replace(plevel, 'lvl 1').strip() 
     return item_name  # Return the original name if no reforge is found
 
 seen_auctions = []
@@ -119,7 +126,8 @@ def process_auctions_and_update_prices(auctions):
         rarity = auction.get('rarity', 'Common')
 
         # Strip the reforge from the item name to compare base items
-        base_item_name = remove_reforge(item_name)
+        base_item_name = Format_name(item_name)
+        
 
         # Create a unique key for each item based on its properties
         item_key = (base_item_name, rarity)
@@ -207,6 +215,8 @@ async def handle_client(websocket, path):
                                             # Calculate the profit margin
                                             profit_margin = ((current_lowest_price / starting_bid) * 100) - 100
                                             profit_min = current_lowest_price - starting_bid
+                                            
+
                                             
                                             # Only update and display if profit margin is above threshold
                                             if profit_margin > 10 and profit_min > 1000000 and item_name not in Crimson_Items:

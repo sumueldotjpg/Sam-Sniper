@@ -13,6 +13,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 Crimson_Items = ["Crimson Helmet", "Crimson Chestplate", "Crimson Leggings", "Crimson Boots", "Aurora Helmet", "Aurora Chestplate", "Aurora Leggings", "Aurora Boots", "Hollow Helmet", "Hollow Chestplate", "Hollow Leggings", "Hollow Boots", "Fervor Helmet", "Fervor Chestplate", "Fervor Leggings", "Fervor Boots", "Terror Helmet", "Terror Chestplate", "Terror Leggings", "Terror Boots"]
 
 
+
+
 seen_auctions = []
 auctionism = defaultdict(lambda: {"lowest_price": float('inf'), "enchantments": None, "item_name": None, "reforge": None})
 api = '1c19e635-6e0e-46f7-aedb-5c95d3a9dbc5'
@@ -48,12 +50,19 @@ blacksmith_reforges = {
     'Epic','Fair','Fast','Gentle','Heroic','Legendary','Odd','Sharp','Spicy','Awkward','Deadly','Fine','Grand','Hasty','Neat','Rapid','Rich','Unreal','Clean','Fierce','Heavy','Light','Mythic','Pure','Titanic','Smart','Wise','Stained','Menacing','Hefty','Soft','Honored','Blended','Astute','Colossal','Brilliant','Epic','Fair','Fast','Gentle','Heroic','Legendary','Odd','Sharp','Spicy','Unyielding','Prospector\'s','Excellent','Sturdy','Fortunate','Great','Rugged','Lush','Lumberjack\'s','Double-Bit','Robust','Zooming','Peasant\'s','Green Thumb'
 }
 
-def remove_reforge(item_name):
+def Format_name(item_name):
+    pet_level = []
+    for x in range (99):
+        pet_level.append(f'lvl {x+1}')
+
     """Remove reforge from the item name."""
     for reforge in blacksmith_reforges:
         if reforge in item_name:
             # If reforge is found, remove it from the name
-            return item_name.replace(reforge, '').strip()
+            item_name = item_name.replace(reforge, '').strip()
+    for plevel in pet_level:
+        if plevel in item_name:
+            item_name = item_name.replace(plevel, 'lvl 1').strip() 
     return item_name  # Return the original name if no reforge is found
 
 seen_auctions = []
@@ -89,7 +98,7 @@ async def monitor_auctions(profit_margin_threshold=10, profit_minimum=1000000):
                     rarity = auction.get('rarity', 'Common')
 
                     # Create a unique key to look up the item in auctionism
-                    base_item_name = remove_reforge(item_name)
+                    base_item_name = Format_name(item_name)
                     item_key = (base_item_name, rarity)
                     
                     # Update the part where new auctions are added to the list
